@@ -224,6 +224,8 @@ import { createMonitoring } from "./monitoring.js";
     unlockError: "",
   };
   let replayGateBlocked = false;
+  const AD_UNAVAILABLE_TEXT = "Ad unavailable · replay unlocked";
+  const adErrorReveal = { message: "", taps: 0, lastTapAt: 0 };
   let postMatchAdGeneration = 0;
   const replayAds = createReplayAdService({
     nativeIos: isNativeIosRuntime(),
@@ -632,7 +634,10 @@ import { createMonitoring } from "./monitoring.js";
     postMatchAdGeneration += 1;
     replayGateBlocked = false;
     if (startButton) startButton.disabled = false;
-    if (adStatus) adStatus.hidden = true;
+    if (adStatus) {
+      adStatus.hidden = true;
+      adStatus.classList.remove("ad-status-error");
+    }
     for (const item of [...platforms, ...riftShards, ...enemies]) {
       const object = item.mesh || item.group;
       root.remove(object);
@@ -2342,13 +2347,36 @@ import { createMonitoring } from "./monitoring.js";
     }
     if (adStatus) {
       adStatus.hidden = hideStatus;
+      adStatus.classList.remove("ad-status-error");
       adStatus.textContent = shown
         ? "Ad break complete · next match ready"
         : reason === "unsupported"
           ? ""
-          : "Ad unavailable · replay unlocked";
+          : AD_UNAVAILABLE_TEXT;
     }
+    // Keep the error that caused this fallback; a background preload may
+    // overwrite the ad state before the player asks to see it.
+    Object.assign(adErrorReveal, { message: describeAdError(), taps: 0, lastTapAt: 0 });
     setTimeout(() => startButton?.focus({ preventScroll: true }), 0);
+  }
+
+  function describeAdError(adState = replayAds.snapshot()) {
+    return [adState.lastError, adState.lastErrorDetail].filter(Boolean).join(" ");
+  }
+
+  // Hidden diagnostic: pressing "Ad unavailable" three times swaps in the
+  // underlying ad error so testers can report it without a debugger.
+  function handleAdStatusPress() {
+    if (!adStatus || adStatus.textContent !== AD_UNAVAILABLE_TEXT) return;
+    const now = performance.now();
+    adErrorReveal.taps = now - adErrorReveal.lastTapAt < 800 ? adErrorReveal.taps + 1 : 1;
+    adErrorReveal.lastTapAt = now;
+    if (adErrorReveal.taps < 3) return;
+    const adState = replayAds.snapshot();
+    adStatus.classList.add("ad-status-error");
+    adStatus.textContent = adErrorReveal.message
+      || describeAdError(adState)
+      || `No ad error recorded (phase: ${adState.phase})`;
   }
 
   async function beginPostMatchAdBreak() {
@@ -3735,6 +3763,7 @@ import { createMonitoring } from "./monitoring.js";
   };
 
   bindPress(startButton, startGame);
+  adStatus?.addEventListener("click", handleAdStatusPress);
   bindPress(fullscreenButton, toggleFullscreen);
   bindPress(muteButton, toggleMute);
   bindPress(privacyOptionsButton, () => void replayAds.showPrivacyOptions());
