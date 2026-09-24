@@ -1398,6 +1398,19 @@ kbd {
   letter-spacing: 0.06em;
 }
 
+.app-version {
+  position: absolute;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(10px, env(safe-area-inset-bottom));
+  z-index: 1;
+  margin: 0;
+  color: rgba(146, 170, 187, 0.6);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+  user-select: none;
+}
+
 .ad-status {
   margin: 10px 0 0;
   color: var(--cyan);

@@ -282,5 +282,11 @@ Current character/planet prompt: همه‌ی شخصیت‌ها را به گرب�
 
 ## 2026-09-24 Version 3.5 (10) Release Prep
 
-- Bumped `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` to 3.5 (10) and `package.json` to 3.5.0 for the TestFlight build containing the UIScene launch-crash fix. The version is not embedded in `game.bundle.js`, so no bundle rebuild was needed.
+- Bumped `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` to 3.5 (10) and `package.json` to 3.5.0 for the TestFlight build containing the UIScene launch-crash fix.
 - Before archiving: `npm run ios:sync`, then build and launch with Xcode 27 on a device or simulator to confirm the app starts.
+
+## 2026-09-24 In-app version label
+
+- The menu overlay shows the app version in its bottom-right corner (e.g. `v3.5 (10)`), matching what TestFlight/App Store Connect show.
+- `scripts/build-ios-web.mjs` reads `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` from `ios/App/App.xcodeproj/project.pbxproj` and injects them as `__APP_VERSION__` via esbuild `define`, so bumping the Xcode version is the only step; the build fails if Debug and Release disagree. Rebuild (`npm run build` / `npm run ios:sync`) after a bump.
+- Checked in Chromium at desktop, iPhone landscape and iPhone portrait sizes: visible, clear of the menu, no page errors.
