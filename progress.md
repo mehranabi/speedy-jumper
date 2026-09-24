@@ -278,4 +278,9 @@ Current character/planet prompt: همه‌ی شخصیت‌ها را به گرب�
 - **Symptom:** TestFlight build 3.4 (9) crashes immediately on launch.
 - **Root cause:** apps built with the iOS 27 SDK (Xcode 27) must use the UIKit scene life cycle; UIKit refuses to launch an app whose Info.plist has no `UIApplicationSceneManifest` and whose app delegate does not implement `application(_:configurationForConnecting:options:)` ("UIScene life cycle is required for apps built with this SDK"). The project still used the legacy `UIMainStoryboardFile` + `AppDelegate.window` setup. Capacitor 8.5 (bumped to 8.5.2 in #2) adopts UIScene and prints "Capacitor 8.5 adopts UIScene on iOS" during `cap migrate`, but that native migration was never applied. 3.3 (8) was archived on 2026-09-07, before Xcode 27.
 - **Fix (mirrors Capacitor 8.5's iOS template):** added `SceneDelegate.swift` (creates the window and `CAPBridgeViewController`, forwards URL/user-activity events to `SceneDelegateProxy`), `configurationForConnecting` in `AppDelegate`, and a single-scene `UIApplicationSceneManifest` in Info.plist. Unlike the template, the scene config has no `UISceneStoryboardFile` and `UIMainStoryboardFile` is removed, so only one bridge/WebView is ever created. `FirebaseApp.configure()` still runs in `didFinishLaunching`, before the scene connects and plugins load.
-- Not verifiable in this Linux environment: needs an Xcode 27 build and launch on a device/simulator before re-uploading. Bump the build number (e.g. 3.4 (10)) for the new TestFlight upload.
+- Not verifiable in this Linux environment: needs an Xcode 27 build and launch on a device/simulator before re-uploading. Shipped as 3.5 (10), see below.
+
+## 2026-09-24 Version 3.5 (10) Release Prep
+
+- Bumped `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` to 3.5 (10) and `package.json` to 3.5.0 for the TestFlight build containing the UIScene launch-crash fix. The version is not embedded in `game.bundle.js`, so no bundle rebuild was needed.
+- Before archiving: `npm run ios:sync`, then build and launch with Xcode 27 on a device or simulator to confirm the app starts.
