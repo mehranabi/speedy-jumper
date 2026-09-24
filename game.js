@@ -1,6 +1,7 @@
 import * as THREE from "./node_modules/three/build/three.module.js";
 import { animateCombatCat, createCombatCat } from "./cat-rig.js";
 import { createReplayAdService, isNativeIosRuntime } from "./ads.js";
+import { createAnalytics } from "./analytics.js";
 
 (() => {
   const byId = (...ids) => ids.map((id) => document.getElementById(id)).find(Boolean);
@@ -225,6 +226,7 @@ import { createReplayAdService, isNativeIosRuntime } from "./ads.js";
     getMuted: () => state.muted,
     onStateChange: updateAdInterface,
   });
+  const analytics = createAnalytics();
 
   const players = {
     p1: makePlayer("p1", "You", 0x65f7df, 0x5ef5ff),
@@ -1160,6 +1162,7 @@ import { createReplayAdService, isNativeIosRuntime } from "./ads.js";
     state.countdown = 3;
     state.message = "Drop in 3";
     hideOverlay();
+    analytics.logEvent("level_start", { level_name: "solo_match" });
     restartMusicTransport();
     void replayAds.preload();
     playSweep(360, 780, 0.2, 0.08, "triangle");
@@ -2256,6 +2259,15 @@ import { createReplayAdService, isNativeIosRuntime } from "./ads.js";
     const localWon = scores.p1 > scores.p2;
     if (localWon) awardCoins(10, true);
     if (state.matchBestStreak >= 8) awardCoins(5, true);
+    analytics.logEvent("level_end", {
+      level_name: "solo_match",
+      success: localWon,
+      result: scores.p1 === scores.p2 ? "draw" : localWon ? "win" : "loss",
+      score: scores.p1,
+      opponent_score: scores.p2,
+      coins_earned: state.matchCoins,
+      best_streak: state.matchBestStreak,
+    });
     if (scores.p1 > state.bestScore) {
       state.bestScore = scores.p1;
       writeNumber("speedy-jumper-best-score", state.bestScore);
@@ -2290,6 +2302,14 @@ import { createReplayAdService, isNativeIosRuntime } from "./ads.js";
 
   function unlockReplayAfterAd({ shown = false, reason = "unavailable", hideStatus = false } = {}) {
     replayGateBlocked = false;
+    if (reason !== "unsupported") {
+      const adState = replayAds.snapshot();
+      analytics.logEvent("post_match_ad", {
+        outcome: shown ? "shown" : reason,
+        ad_phase: adState.phase,
+        ad_error: adState.lastErrorDetail || adState.lastError || "none",
+      });
+    }
     updateAdInterface(replayAds.snapshot());
     if (startButton) {
       startButton.disabled = false;
