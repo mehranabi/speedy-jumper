@@ -95,7 +95,8 @@ function makeFakeModule({
     module: {
       AdMob: plugin,
       InterstitialAdPluginEvents: events,
-      PrivacyOptionsRequirementStatus: { REQUIRED: "REQUIRED", NOT_REQUIRED: "NOT_REQUIRED" },
+      // Mirrors @capacitor-community/admob 8.1.0, whose package root does
+      // not export PrivacyOptionsRequirementStatus.
     },
     stats,
   };
@@ -357,7 +358,6 @@ async function testGameReplayGate() {
           module: {
             AdMob,
             InterstitialAdPluginEvents: adEvents,
-            PrivacyOptionsRequirementStatus: { REQUIRED: "REQUIRED", NOT_REQUIRED: "NOT_REQUIRED" },
           },
         },
         configurable: false,
