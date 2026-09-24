@@ -1407,6 +1407,16 @@ kbd {
   text-transform: uppercase;
 }
 
+.ad-status.ad-status-error {
+  color: var(--amber);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  overflow-wrap: anywhere;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 [hidden] {
   display: none !important;
 }
