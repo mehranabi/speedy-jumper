@@ -232,8 +232,11 @@ export function createReplayAdService({
         );
         plugin = module.AdMob;
         events = module.InterstitialAdPluginEvents;
-        privacyStatuses = module.PrivacyOptionsRequirementStatus;
-        if (!plugin || !events || !privacyStatuses) throw new Error("AdMob plugin exports are unavailable.");
+        // @capacitor-community/admob 8.1.0 does not re-export this enum from
+        // its package root, so fall back to the strings the native plugin
+        // returns. Requiring the export made every native init fail.
+        privacyStatuses = module.PrivacyOptionsRequirementStatus ?? { REQUIRED: "REQUIRED" };
+        if (!plugin || !events) throw new Error("AdMob plugin exports are unavailable.");
 
         await withTimeout(registerListeners(), settings.moduleTimeoutMs, "AdMob listener setup timed out.");
         state.initialized = true;

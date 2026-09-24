@@ -2,8 +2,12 @@ import * as THREE from "./node_modules/three/build/three.module.js";
 import { animateCombatCat, createCombatCat } from "./cat-rig.js";
 import { createReplayAdService, isNativeIosRuntime } from "./ads.js";
 import { createAnalytics } from "./analytics.js";
+import { createMonitoring } from "./monitoring.js";
 
 (() => {
+  const monitoring = createMonitoring();
+  monitoring.installGlobalErrorHandlers();
+  monitoring.startTrace("game_boot");
   const byId = (...ids) => ids.map((id) => document.getElementById(id)).find(Boolean);
   const canvas = document.getElementById("game");
   const overlay = document.getElementById("overlay");
@@ -227,6 +231,8 @@ import { createAnalytics } from "./analytics.js";
     onStateChange: updateAdInterface,
   });
   const analytics = createAnalytics();
+  let bootTraceStopped = false;
+  const matchFrames = { count: 0, slow: 0, seconds: 0 };
 
   const players = {
     p1: makePlayer("p1", "You", 0x65f7df, 0x5ef5ff),
@@ -1163,6 +1169,8 @@ import { createAnalytics } from "./analytics.js";
     state.message = "Drop in 3";
     hideOverlay();
     analytics.logEvent("level_start", { level_name: "solo_match" });
+    Object.assign(matchFrames, { count: 0, slow: 0, seconds: 0 });
+    monitoring.startTrace("solo_match");
     restartMusicTransport();
     void replayAds.preload();
     playSweep(360, 780, 0.2, 0.08, "triangle");
@@ -1171,13 +1179,25 @@ import { createAnalytics } from "./analytics.js";
 
   function animate() {
     requestAnimationFrame(animate);
-    const frameDt = Math.min(clock.getDelta(), 0.1);
+    const rawFrameDt = clock.getDelta();
+    const frameDt = Math.min(rawFrameDt, 0.1);
+    if (state.started && !state.ended && !state.paused && rawFrameDt < 1) {
+      // Frames slower than 30 fps count as slow; long gaps (backgrounding)
+      // are excluded so they do not skew the match's average.
+      matchFrames.count += 1;
+      matchFrames.seconds += rawFrameDt;
+      if (rawFrameDt > 1 / 30) matchFrames.slow += 1;
+    }
     accumulator = Math.min(accumulator + frameDt, 0.25);
     while (accumulator >= fixedStep) {
       update(fixedStep);
       accumulator -= fixedStep;
     }
     renderer.render(scene, camera);
+    if (!bootTraceStopped) {
+      bootTraceStopped = true;
+      monitoring.stopTrace("game_boot");
+    }
   }
 
   function update(dt) {
@@ -2267,6 +2287,11 @@ import { createAnalytics } from "./analytics.js";
       opponent_score: scores.p2,
       coins_earned: state.matchCoins,
       best_streak: state.matchBestStreak,
+    });
+    monitoring.stopTrace("solo_match", {
+      frames: matchFrames.count,
+      slow_frames: matchFrames.slow,
+      avg_fps: matchFrames.seconds > 0 ? matchFrames.count / matchFrames.seconds : 0,
     });
     if (scores.p1 > state.bestScore) {
       state.bestScore = scores.p1;
