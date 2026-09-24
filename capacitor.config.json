@@ -25,6 +25,12 @@
         "packageOptions": {
           "@capacitor-firebase/analytics": {
             "symlink": true
+          },
+          "@capacitor-firebase/crashlytics": {
+            "symlink": true
+          },
+          "@capacitor-firebase/performance": {
+            "symlink": true
           }
         },
         "packageTraits": {
