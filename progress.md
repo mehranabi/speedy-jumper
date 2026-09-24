@@ -266,3 +266,9 @@ Current character/planet prompt: همه‌ی شخصیت‌ها را به گرب�
 - Crashlytics logs "non-Crashlytics handler (GADRegisterSignalHandlers)" at launch: Google Mobile Ads installs its own signal handlers after Firebase configures. Verify with a test crash on a physical device.
 - **Root cause of "Ad unavailable":** `@capacitor-community/admob` 8.1.0 does not export `PrivacyOptionsRequirementStatus` from its package root, so `ads.js` threw "AdMob plugin exports are unavailable" on every native launch and never reached AdMob. `ads.js` now falls back to the native `"REQUIRED"` string, and the QA mocks no longer provide the export, so the regression is covered.
 - **Second blocker (AdMob console, not code):** UMP returns "no form(s) configured for the input app ID" for `ca-app-pub-1684528554830333~7667706174`. A consent message (GDPR, and optionally US state regulations) must be created and published under AdMob → Privacy & messaging for this app; until then consent never settles and no ads are requested.
+
+## 2026-09-24 Version 3.4 (9) Release Prep
+
+- Bumped `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` to 3.4 (9) and `package.json` to 3.4.0. This build ships Firebase Analytics, Crashlytics and Performance (#2, #3), the AdMob init fix (#3), and the triple-press ad error reveal (#4).
+- Rebuilt `game.bundle.js` and ran `npx cap sync ios`; verified the production interstitial unit and `isTesting:false` in the synced bundle, and a Release `generic/platform=iOS` build succeeds (Crashlytics dSYM validation passes). The app owner archives and uploads from Xcode.
+- Still outstanding: publish a UMP consent message in AdMob → Privacy & messaging for this app (otherwise ads stay unavailable), and update the App Store Connect App Privacy answers for Firebase data collection before a public App Store submission.
