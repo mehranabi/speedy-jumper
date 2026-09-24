@@ -249,3 +249,11 @@ Current character/planet prompt: همه‌ی شخصیت‌ها را به گرب�
 - Verified the built bundle (`dist/game.bundle.js`) contains the production ad unit ID and `isTesting:!1` (minified `false`) before archiving.
 - Bumped the app to version 3.3 (build 8), rebuilt/synced the native iOS payload, and archived it for TestFlight.
 - Outstanding before a public App Store submission (not TestFlight): the App Store Connect App Privacy answers still say "Data Not Collected" and need updating to reflect AdMob's actual data collection now that real ads are live.
+
+## 2026-09-24 Firebase Analytics
+
+- Added `@capacitor-firebase/analytics` 8.5.2 (Firebase iOS SDK 12.x via SPM) and the Firebase project `speedy-jumper-f2a2c` config at `ios/App/App/GoogleService-Info.plist` (added to the App target's resources). The plugin configures Firebase itself on load, so `AppDelegate.swift` is unchanged.
+- Bumped Capacitor core/ios/cli to 8.5.2: the plugin's SPM `packageOptions.symlink` setting (avoids a SwiftPM package-identity collision) needs CLI 8.4.0+. `npx cap sync` now generates `ios/App/CapApp-SPM/symlinks/`, which is gitignored.
+- Uses the `AnalyticsWithoutAdIdSupport` trait (no IDFA; the app shows no ATT prompt) and sets Info.plist consent-mode defaults `GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_STORAGE`/`AD_USER_DATA`/`AD_PERSONALIZATION_SIGNALS` to false, so Analytics is used for product analytics only.
+- `analytics.js` registers the native plugin without a web implementation, so the browser preview stays analytics-free and the Firebase JS SDK is not bundled. Events: `level_start`, `level_end` (result, score, opponent_score, coins_earned, best_streak), and `post_match_ad` (outcome, ad_phase, ad_error — the native AdMob error text, now kept in the ad state as `lastErrorDetail`).
+- Outstanding: App Store Connect App Privacy answers must declare Analytics data collection (Product Interaction, Device ID/app instance ID, not linked to identity, not used for tracking).

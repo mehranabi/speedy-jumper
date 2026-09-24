@@ -49,6 +49,7 @@ export function createReplayAdService({
     phase: nativeIos ? "idle" : "unsupported",
     impressions: 0,
     lastError: "",
+    lastErrorDetail: "",
   };
 
   let plugin = null;
@@ -68,6 +69,9 @@ export function createReplayAdService({
   const notify = () => onStateChange(snapshot());
   const recordError = (message, error) => {
     state.lastError = message;
+    // The native SDK's own reason (e.g. AdMob's "No ad to show"), kept short
+    // enough to report as an analytics parameter.
+    state.lastErrorDetail = String(error?.message ?? error ?? "").slice(0, 100);
     logger.warn?.(message, error);
     notify();
   };
@@ -198,6 +202,7 @@ export function createReplayAdService({
         state.sdkInitialized = true;
         state.phase = "idle";
         state.lastError = "";
+        state.lastErrorDetail = "";
         notify();
         return true;
       } catch (error) {
@@ -289,6 +294,7 @@ export function createReplayAdService({
         state.ready = true;
         state.phase = "ready";
         state.lastError = "";
+        state.lastErrorDetail = "";
         return true;
       },
       (error) => {
@@ -334,6 +340,7 @@ export function createReplayAdService({
     state.showing = true;
     state.phase = "showing";
     state.lastError = "";
+    state.lastErrorDetail = "";
     notify();
 
     try {
