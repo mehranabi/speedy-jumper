@@ -272,3 +272,21 @@ Current character/planet prompt: همه‌ی شخصیت‌ها را به گرب�
 - Bumped `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` to 3.4 (9) and `package.json` to 3.4.0. This build ships Firebase Analytics, Crashlytics and Performance (#2, #3), the AdMob init fix (#3), and the triple-press ad error reveal (#4).
 - Rebuilt `game.bundle.js` and ran `npx cap sync ios`; verified the production interstitial unit and `isTesting:false` in the synced bundle, and a Release `generic/platform=iOS` build succeeds (Crashlytics dSYM validation passes). The app owner archives and uploads from Xcode.
 - Still outstanding: publish a UMP consent message in AdMob → Privacy & messaging for this app (otherwise ads stay unavailable), and update the App Store Connect App Privacy answers for Firebase data collection before a public App Store submission.
+
+## 2026-09-24 Launch crash fix: adopt the UIScene life cycle
+
+- **Symptom:** TestFlight build 3.4 (9) crashes immediately on launch.
+- **Root cause:** apps built with the iOS 27 SDK (Xcode 27) must use the UIKit scene life cycle; UIKit refuses to launch an app whose Info.plist has no `UIApplicationSceneManifest` and whose app delegate does not implement `application(_:configurationForConnecting:options:)` ("UIScene life cycle is required for apps built with this SDK"). The project still used the legacy `UIMainStoryboardFile` + `AppDelegate.window` setup. Capacitor 8.5 (bumped to 8.5.2 in #2) adopts UIScene and prints "Capacitor 8.5 adopts UIScene on iOS" during `cap migrate`, but that native migration was never applied. 3.3 (8) was archived on 2026-09-07, before Xcode 27.
+- **Fix (mirrors Capacitor 8.5's iOS template):** added `SceneDelegate.swift` (creates the window and `CAPBridgeViewController`, forwards URL/user-activity events to `SceneDelegateProxy`), `configurationForConnecting` in `AppDelegate`, and a single-scene `UIApplicationSceneManifest` in Info.plist. Unlike the template, the scene config has no `UISceneStoryboardFile` and `UIMainStoryboardFile` is removed, so only one bridge/WebView is ever created. `FirebaseApp.configure()` still runs in `didFinishLaunching`, before the scene connects and plugins load.
+- Not verifiable in this Linux environment: needs an Xcode 27 build and launch on a device/simulator before re-uploading. Shipped as 3.5 (10), see below.
+
+## 2026-09-24 Version 3.5 (10) Release Prep
+
+- Bumped `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` to 3.5 (10) and `package.json` to 3.5.0 for the TestFlight build containing the UIScene launch-crash fix.
+- Before archiving: `npm run ios:sync`, then build and launch with Xcode 27 on a device or simulator to confirm the app starts.
+
+## 2026-09-24 In-app version label
+
+- The menu overlay shows the app version in its bottom-right corner (e.g. `v3.5 (10)`), matching what TestFlight/App Store Connect show.
+- `scripts/build-ios-web.mjs` reads `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` from `ios/App/App.xcodeproj/project.pbxproj` and injects them as `__APP_VERSION__` via esbuild `define`, so bumping the Xcode version is the only step; the build fails if Debug and Release disagree. Rebuild (`npm run build` / `npm run ios:sync`) after a bump.
+- Checked in Chromium at desktop, iPhone landscape and iPhone portrait sizes: visible, clear of the menu, no page errors.

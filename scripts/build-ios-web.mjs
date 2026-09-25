@@ -18,6 +18,20 @@ const embeddedTextureFiles = [
   "assets/textures/planet-mercury-v1.webp",
 ];
 
+// The Xcode project is the source of truth for what TestFlight/App Store
+// show, so the in-game version label is read from it at build time.
+const readAppVersion = async () => {
+  const pbxproj = await readFile(path.join(root, "ios/App/App.xcodeproj/project.pbxproj"), "utf8");
+  const valuesOf = (key) => new Set([...pbxproj.matchAll(new RegExp(`${key} = ([^;]+);`, "g"))].map((match) => match[1]));
+  const marketing = valuesOf("MARKETING_VERSION");
+  const build = valuesOf("CURRENT_PROJECT_VERSION");
+  if (marketing.size !== 1 || build.size !== 1) {
+    throw new Error(`Expected one MARKETING_VERSION and CURRENT_PROJECT_VERSION in project.pbxproj, found ${[...marketing]} / ${[...build]}`);
+  }
+  return `v${[...marketing][0]} (${[...build][0]})`;
+};
+const appVersion = await readAppVersion();
+
 const copyFileOrDir = async (from, to) => {
   await mkdir(path.dirname(to), { recursive: true });
   await cp(from, to, { recursive: true });
@@ -61,6 +75,7 @@ await build({
   target: ["ios15"],
   sourcemap: false,
   minify: true,
+  define: { __APP_VERSION__: JSON.stringify(appVersion) },
   plugins: [{
     name: "embed-local-textures",
     setup(buildContext) {
@@ -79,4 +94,4 @@ await build({
 await copyFileOrDir(bundlePath, path.join(outDir, "game.bundle.js"));
 
 const size = await stat(outDir);
-console.log(`Built standalone browser/iOS bundle at ${path.relative(root, bundlePath)} and ${path.relative(root, outDir)} (${size.isDirectory() ? "ready" : "missing"})`);
+console.log(`Built ${appVersion} standalone browser/iOS bundle at ${path.relative(root, bundlePath)} and ${path.relative(root, outDir)} (${size.isDirectory() ? "ready" : "missing"})`);

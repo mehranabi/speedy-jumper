@@ -15,6 +15,9 @@ import { createMonitoring } from "./monitoring.js";
   const overlayNote = byId("overlay-note");
   const adStatus = byId("ad-status");
   const privacyOptionsButton = byId("privacy-options-button");
+  const appVersionLabel = byId("app-version");
+  // Injected by scripts/build-ios-web.mjs from the Xcode project version.
+  if (appVersionLabel) appVersionLabel.textContent = typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "";
   const p1HealthValue = byId("p1-health", "p1");
   const p2HealthValue = byId("p2-health", "p2");
   const p1HealthBar = document.getElementById("p1-health-bar");
